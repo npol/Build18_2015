@@ -1,0 +1,114 @@
+#include <msp430.h> 
+
+//TODO: Put in header file
+typedef unsigned char uint8_t;
+typedef char int8_t;
+typedef unsigned int uint16_t;
+typedef int int16_t;
+typedef unsigned long uint32_t;
+typedef long int32_t;
+typedef unsigned long long uint64_t;
+typedef long long int64_t;
+
+/* Debug LED Macros */
+#define DBG_ASSERT              (P1OUT |= BIT0)
+#define DBG_DEASSERT            (P1OUT &= ~BIT0)
+
+/* SPI Macros: Active Low */
+#define SPI_CS_ASSERT           (P1OUT &= ~BIT4)
+#define SPI_CS_DEASSERT         (P1OUT |= BIT4)
+#define SPI_TXINT_ENABLE        (IE2 |= UCB0TXIE)
+#define SPI_TXINT_DISABLE       (IE2 &= ~UCB0TXIE)
+#define SPI_RXINT_ENABLE        (IE2 |= UCB0RXIE)
+#define SPI_RXINT_DISABLE       (IE2 &= ~UCB0RXIE)
+
+void spi_tx_byte(unsigned char data);
+
+/* SPI Buffers */
+uint8_t spi_buf;
+uint8_t num_bytes_to_tx = 0;
+
+/** Application Functions **/
+int main(void) {
+    WDTCTL = WDTPW | WDTHOLD;	// Stop watchdog timer
+
+    /* Pin Setup */
+    P1OUT = 0x00;
+    P2OUT = 0x00;
+    P3OUT = 0x00;
+    P1DIR = BIT0;				//P1.0: LED out
+
+    /* Clock Setup 8MHz SMCLK from DCO */
+    if(CALBC1_8MHZ == 0xff) while(1);
+    BCSCTL1 = CALBC1_8MHZ;
+    DCOCTL = CALDCO_8MHZ;
+
+    /* USCIA_UART setup: 9600baud */
+    //9600baud No parity, 1stop, 8-bit, LSB first
+    UCA0CTL1 |= UCSWRST;
+    UCA0CTL1 = UCSSEL_2 + UCSWRST;
+    UCA0BR1 = 0x03;//UCBRx = 833
+    UCA0BR0 = 0x41;
+    UCA0MCTL = UCBRS_2;
+    P1SEL |= BIT1 + BIT2;
+    P1SEL2 |= BIT1 + BIT2;
+    UCA0CTL1 &= ~UCSWRST;
+    IE2 |= UCA0TXIE;
+
+    /* USCIB_SPI setup */
+    //1MHZ Clk, LSB first
+    UCB0CTL1 |= UCSWRST;
+    UCB0CTL0 = UCCKPH + UCMST + UCMODE_0;//UCMSB? UCSYNC?
+    UCB0CTL1 = UCSSEL_2 + UCSWRST;
+    UCB0BR0 = 0x08;//1MHz
+
+    P1SEL |= BIT5 + BIT6 + BIT7; //P1.5: SCK; P1.6: MISO; P1.7: MOSI
+    P1SEL2 |= BIT5 + BIT6 + BIT7;
+    P1DIR |= BIT4;//P1.4: CS
+    UCB0CTL1 &= ~UCSWRST;
+
+    __bis_SR_register(GIE);
+
+    while(1){
+        spi_tx_byte(0x10);
+        int i;
+        for(i=0; i<1000; i++);
+    }
+}
+
+/** SPI HAL Interface **/
+void spi_tx_byte(unsigned char data){
+	SPI_CS_ASSERT;
+	spi_buf = data;
+	num_bytes_to_tx = 1;
+	SPI_TXINT_ENABLE;
+	SPI_RXINT_ENABLE;
+	return;
+}
+
+
+
+#pragma vector=USCIAB0TX_VECTOR
+__interrupt void USCIAB0TX_ISR(void){
+	if(IFG2 & UCA0TXIFG){
+		/* UART Tx Interrupt: TXBUF ready for new character */
+		UCA0TXBUF = 0x4f;
+	} else if(IFG2 & UCB0TXIFG){
+	    /* SPI Tx Interrupt: TXBUF ready for new character */
+		if(num_bytes_to_tx == 0){
+		    //SPI_CS_DEASSERT;
+		    SPI_TXINT_DISABLE;
+		} else {
+			UCB0TXBUF = spi_buf;
+			num_bytes_to_tx--;
+		}
+	}
+}
+
+#pragma vector=USCIAB0RX_VECTOR
+__interrupt void USCIAB0RX_ISR(void){
+    if(IFG2 & UCB0RXIFG){
+        (void)UCB0RXBUF;
+        SPI_CS_DEASSERT;
+    }
+}
