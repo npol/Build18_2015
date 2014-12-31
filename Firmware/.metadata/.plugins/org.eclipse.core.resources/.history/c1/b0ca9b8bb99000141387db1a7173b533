@@ -31,17 +31,6 @@ void spi_tx(uint8_t* data, uint8_t num_bytes){
     return;
 }
 
-void spi_tx_byte(uint8_t data){
-    SPI_CS_ASSERT;
-    spi_txbuf[0] = data;
-    num_bytes_to_tx = 1;
-    spi_tx_done = 0;
-    spi_txbuf_ptr = 0;
-    spi_rxbuf_ptr = 0;
-    SPI_TXINT_ENABLE;
-    SPI_RXINT_ENABLE;
-}
-
 void spi_rx(uint8_t* buf, uint8_t num_bytes){
     uint8_t i;
     for(i = 0; i < num_bytes; i++){
@@ -49,11 +38,6 @@ void spi_rx(uint8_t* buf, uint8_t num_bytes){
     }
     spi_rx_done = 0;
     return;
-}
-
-uint8_t spi_rx_byte(void){
-    spi_rx_done = 0;
-    return spi_rxbuf[0];
 }
 
 

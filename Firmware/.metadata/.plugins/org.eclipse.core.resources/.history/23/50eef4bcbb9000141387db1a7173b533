@@ -61,7 +61,6 @@ int main(void) {
         for(i=0; i<1000; i++);
         */
         read_status_byte();
-        write_cfg_reg(REG_ADDR, 0x4f);
         uint16_t i;
         for(i=0; i<1000; i++);
     }

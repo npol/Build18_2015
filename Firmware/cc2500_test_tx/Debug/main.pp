@@ -7,6 +7,7 @@ main.obj: c:/ti/ccsv6/ccs_base/msp430/include/in430.h
 main.obj: c:/ti/ccsv6/tools/compiler/msp430_4.3.1/include/intrinsics.h
 main.obj: ../utils.h
 main.obj: ../spi.h
+main.obj: ../cc2500.h
 
 ../main.c: 
 c:/ti/ccsv6/ccs_base/msp430/include/msp430.h: 
@@ -15,3 +16,4 @@ c:/ti/ccsv6/ccs_base/msp430/include/in430.h:
 c:/ti/ccsv6/tools/compiler/msp430_4.3.1/include/intrinsics.h: 
 ../utils.h: 
 ../spi.h: 
+../cc2500.h: 

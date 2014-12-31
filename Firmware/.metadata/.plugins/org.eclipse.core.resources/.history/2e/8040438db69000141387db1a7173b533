@@ -10,7 +10,6 @@ ORDERED_OBJS += \
 $(GEN_CMDS__FLAG) \
 "./spi.obj" \
 "./main.obj" \
-"./cc2500.obj" \
 "../lnk_msp430g2553.cmd" \
 -l"libc.a" \
 
@@ -142,8 +141,8 @@ cc2500_test_tx.hex: $(EXE_OUTPUTS)
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)$(BIN_OUTPUTS__QUOTED)
-	-$(RM) "cc2500.pp" "main.pp" "spi.pp" 
-	-$(RM) "cc2500.obj" "main.obj" "spi.obj" 
+	-$(RM) "main.pp" "spi.pp" 
+	-$(RM) "main.obj" "spi.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 
